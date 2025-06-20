@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoJelantah RFID Data Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #2980b9;
+        }
+        .rfid-display {
+            background-color: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 100px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d5f4e6;
+            color: #27ae60;
+            border: 1px solid #2ecc71;
+        }
+        .status.error {
+            background-color: #fadbd8;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background-color: white;
+            margin: 15% auto;
+            padding: 20px;
+            width: 70%;
+            border-radius: 5px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .user-info {
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 EcoJelantah RFID Data Viewer</h1>
+        
+        <div class="user-info" id="userInfo">
+            <h3>Informasi Pengguna</h3>
+            <p id="userName"></p>
+            <p id="warungName"></p>
+        </div>
+
+        <button class="button" id="registerBtn" onclick="showRegisterModal()" style="display: none;">📝 Register</button>
+        <button class="button" onclick="viewData()">👁️ Lihat Data RFID</button>
+        
+        <div class="rfid-display" id="rfidDisplay">
+            Data RFID akan ditampilkan di sini...
+        </div>
+        
+        <div class="status" id="status"></div>
+    </div>
+
+    <!-- Modal Register -->
+    <div id="registerModal" class="modal">
+        <div class="modal-content">
+            <h2>Register User</h2>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label>UID RFID:</label>
+                    <input type="text" id="uidInput" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Nama:</label>
+                    <input type="text" id="nameInput" required>
+                </div>
+                <div class="form-group">
+                    <label>Nama Warung:</label>
+                    <input type="text" id="warungInput" required>
+                </div>
+                <input type="hidden" id="statusInput" value="aktif">
+                <button type="submit" class="button">Kirim</button>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAE2T89FmfImP16EpvFvJzuW0MSI1M_4Jw",
+            authDomain: "ecojelantah-8d758.firebaseapp.com",
+            projectId: "ecojelantah-8d758",
+            storageBucket: "ecojelantah-8d758.firebasestorage.app",
+            messagingSenderId: "1012714341065",
+            appId: "1:1012714341065:web:f67e3667c98ae24e1c4318"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        let lastUID = "";
+        
+        async function checkUserExists(uid) {
+            const q = query(collection(db, "users"), where("uid", "==", uid));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+                const userData = querySnapshot.docs[0].data();
+                document.getElementById('userInfo').style.display = 'block';
+                document.getElementById('userName').textContent = `Nama: ${userData.nama}`;
+                document.getElementById('warungName').textContent = `Warung: ${userData.nama_warung}`;
+                document.getElementById('registerBtn').style.display = 'none';
+                return true;
+            }
+            document.getElementById('userInfo').style.display = 'none';
+            document.getElementById('registerBtn').style.display = 'block';
+            return false;
+        }
+
+        window.showRegisterModal = function() {
+            document.getElementById('registerModal').style.display = 'block';
+            document.getElementById('uidInput').value = lastUID;
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            try {
+                await addDoc(collection(db, "users"), {
+                    uid: document.getElementById('uidInput').value,
+                    nama: document.getElementById('nameInput').value,
+                    nama_warung: document.getElementById('warungInput').value,
+                    status: document.getElementById('statusInput').value
+                });
+                document.getElementById('registerModal').style.display = 'none';
+                await checkUserExists(lastUID);
+            } catch (error) {
+                console.error("Error adding document: ", error);
+            }
+        });
+
+        window.onclick = function(event) {
+            if (event.target == document.getElementById('registerModal')) {
+                document.getElementById('registerModal').style.display = 'none';
+            }
+        }
+        
+        function viewData() {
+            const display = document.getElementById('rfidDisplay');
+            const status = document.getElementById('status');
+            
+            if (lastUID) {
+                display.textContent = `UID RFID: ${lastUID}\nWaktu Scan: ${new Date().toLocaleString('id-ID')}\nStatus: Berhasil dibaca`;
+                status.textContent = "✅ Data RFID berhasil ditampilkan";
+                status.className = "status success";
+            } else {
+                display.textContent = "Belum ada data RFID yang tersedia.\nSilakan scan kartu RFID terlebih dahulu.";
+                status.textContent = "⚠️ Belum ada data RFID";
+                status.className = "status error";
+            }
+        }
+        
+        async function receiveRFIDData(uid) {
+            lastUID = uid;
+            console.log("Received RFID UID:", uid);
+            await checkUserExists(uid);
+        }
+        
+        setInterval(() => {
+            const demoUIDs = [
+                "04 A3 B2 C1 D5 E6 F7 88",
+                "04 12 34 56 78 9A BC DE",
+                "04 98 76 54 32 10 FE DC"
+            ];
+            
+            if (Math.random() > 0.7) {
+                const randomUID = demoUIDs[Math.floor(Math.random() * demoUIDs.length)];
+                receiveRFIDData(randomUID);
+            }
+        }, 5000);
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('rfidDisplay').textContent = 
+                "Selamat datang di EcoJelantah RFID Data Viewer\n\n" +
+                "Klik tombol 'Lihat Data RFID' untuk melihat data terbaru.";
+        });
+    </script>
+</body>
+</html>
