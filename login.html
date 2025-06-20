@@ -137,7 +137,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>🔄 EcoJelantah LOGIN</h1>
+        <h1>EcoJelantah Real-time Status</h1>
         
         <div class="user-info" id="userInfo">
             <h3>Informasi Pengguna</h3>
@@ -145,13 +145,11 @@
             <p id="warungName"></p>
         </div>
 
-        <button class="button" onclick="viewData()">👁️ Lihat Data RFID</button>
-        
         <div class="rfid-display" id="rfidDisplay">
-            Data RFID akan ditampilkan di sini...
+            Arahkan kartu RFID Anda ke alat pemindai...
         </div>
         <div class="loader" id="loader"></div>
-        <button class="button" id="registerBtn" onclick="showRegisterModal()" style="display: none;">📝 Register</button>
+        <button class="button" id="registerBtn" onclick="showRegisterModal()" style="display: none;">📝 Register Kartu Ini</button>
         <button class="login-button" id="loginBtn" onclick="login()" style="display: none;">🔑 Login</button>
         
         <div class="status" id="status"></div>
@@ -182,7 +180,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, addDoc, query, where, getDocs, doc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyAE2T89FmfImP16EpvFvJzuW0MSI1M_4Jw",
@@ -245,43 +243,61 @@
             }
         }
         
-        window.viewData = async function() {
+        document.addEventListener('DOMContentLoaded', function() {
             const display = document.getElementById('rfidDisplay');
             const status = document.getElementById('status');
             const loader = document.getElementById('loader');
-            
-            loader.style.display = 'block';
-            display.textContent = "Mensimulasikan pemindaian kartu...";
-            status.textContent = "Memeriksa status pengguna...";
+
+            status.textContent = "Menunggu pemindaian kartu...";
             status.className = "status";
-            document.getElementById('registerBtn').style.display = 'none';
-            document.getElementById('loginBtn').style.display = 'none';
-            document.getElementById('userInfo').style.display = 'none';
 
-            await new Promise(resolve => setTimeout(resolve, 1500)); 
+            const docRef = doc(db, "device_status", "latest_scan");
 
-            const demoUIDs = ["04 A3 B2 C1 D5 E6 F7 88", "04 12 34 56 78 9A BC DE"];
-            const randomUID = demoUIDs[Math.floor(Math.random() * demoUIDs.length)];
-            lastUID = randomUID;
+            onSnapshot(docRef, async (docSnap) => {
+                console.log("Menerima pembaruan dari Firestore...");
+                
+                loader.style.display = 'block';
+                document.getElementById('registerBtn').style.display = 'none';
+                document.getElementById('loginBtn').style.display = 'none';
+                document.getElementById('userInfo').style.display = 'none';
 
-            display.textContent = `UID RFID: ${lastUID}\nWaktu Scan: ${new Date().toLocaleString('id-ID')}`;
-            
-            const userExists = await checkUserExists(lastUID);
-            
-            loader.style.display = 'none';
-            if (userExists) {
-                status.textContent = "✅ Pengguna ditemukan. Silakan login.";
-                status.className = "status success";
-            } else {
-                status.textContent = "ℹ️ Kartu belum terdaftar. Silakan register.";
-                status.className = "status"; 
-            }
-        }
-        
-        document.addEventListener('DOMContentLoaded', function() {
-            document.getElementById('rfidDisplay').textContent = 
-                "Selamat datang di EcoJelantah RFID Data Viewer\n\n" +
-                "Klik tombol 'Lihat Data RFID' untuk memulai.";
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    lastUID = data.uid;
+
+                    if (!lastUID) {
+                        display.textContent = "Data diterima dari server, namun UID kosong.";
+                        status.textContent = "⚠️ Data tidak valid";
+                        status.className = "status error";
+                        loader.style.display = 'none';
+                        return;
+                    }
+
+                    display.textContent = `UID KARTU: ${lastUID}\nWaktu Scan: ${data.timestamp.toDate().toLocaleString('id-ID')}`;
+                    
+                    const userExists = await checkUserExists(lastUID);
+                    
+                    loader.style.display = 'none';
+                    if (userExists) {
+                        status.textContent = "✅ Pengguna ditemukan. Silakan login.";
+                        status.className = "status success";
+                    } else {
+                        status.textContent = "ℹ️ Kartu belum terdaftar. Silakan register.";
+                        status.className = "status";
+                    }
+                } else {
+                    loader.style.display = 'none';
+                    display.textContent = "Dokumen status tidak ditemukan di server. Pastikan alat mengirim data.";
+                    status.textContent = "❌ Menunggu data pertama dari alat...";
+                    status.className = "status error";
+                }
+            }, (error) => {
+                console.error("Error saat mendengarkan dokumen:", error);
+                loader.style.display = 'none';
+                display.textContent = "Gagal terhubung ke layanan real-time Firebase.";
+                status.textContent = `❌ Error: ${error.message}`;
+                status.className = "status error";
+            });
         });
     </script>
 </body>
