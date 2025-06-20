@@ -37,6 +37,21 @@
         .button:hover {
             background-color: #2980b9;
         }
+        .login-button {
+            background-color: #27ae60;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: background-color 0.3s;
+            display: none;
+        }
+        .login-button:hover {
+            background-color: #219a52;
+        }
         .rfid-display {
             background-color: #ecf0f1;
             border: 2px solid #bdc3c7;
@@ -111,12 +126,13 @@
             <p id="warungName"></p>
         </div>
 
-        <button class="button" id="registerBtn" onclick="showRegisterModal()" style="display: none;">📝 Register</button>
         <button class="button" onclick="viewData()">👁️ Lihat Data RFID</button>
         
         <div class="rfid-display" id="rfidDisplay">
             Data RFID akan ditampilkan di sini...
         </div>
+        <button class="button" id="registerBtn" onclick="showRegisterModal()" style="display: none;">📝 Register</button>
+        <button class="login-button" id="loginBtn" onclick="login()" style="display: none;">🔑 Login</button>
         
         <div class="status" id="status"></div>
     </div>
@@ -170,16 +186,23 @@
                 document.getElementById('userName').textContent = `Nama: ${userData.nama}`;
                 document.getElementById('warungName').textContent = `Warung: ${userData.nama_warung}`;
                 document.getElementById('registerBtn').style.display = 'none';
+                document.getElementById('loginBtn').style.display = 'block';
                 return true;
             }
             document.getElementById('userInfo').style.display = 'none';
             document.getElementById('registerBtn').style.display = 'block';
+            document.getElementById('loginBtn').style.display = 'none';
             return false;
         }
 
         window.showRegisterModal = function() {
             document.getElementById('registerModal').style.display = 'block';
             document.getElementById('uidInput').value = lastUID;
+        }
+
+        window.login = function() {
+            localStorage.setItem('loggedIn', 'true');
+            window.location.href = 'index.html';
         }
 
         document.getElementById('registerForm').addEventListener('submit', async (e) => {
