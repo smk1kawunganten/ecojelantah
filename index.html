@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoJelantah RFID Data Viewer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .button {
+            background-color: #3498db;
+            color: white;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-bottom: 20px;
+            transition: background-color 0.3s;
+        }
+        .button:hover {
+            background-color: #2980b9;
+        }
+        .rfid-display {
+            background-color: #ecf0f1;
+            border: 2px solid #bdc3c7;
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 100px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .status {
+            margin-top: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .status.success {
+            background-color: #d5f4e6;
+            color: #27ae60;
+            border: 1px solid #2ecc71;
+        }
+        .status.error {
+            background-color: #fadbd8;
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 EcoJelantah RFID Data Viewer</h1>
+        
+        <button class="button" onclick="viewData()">👁️ Lihat Data RFID</button>
+        
+        <div class="rfid-display" id="rfidDisplay">
+            Data RFID akan ditampilkan di sini...
+        </div>
+        
+        <div class="status" id="status"></div>
+    </div>
+
+    <script>
+        let lastUID = "";
+        
+        function viewData() {
+            const display = document.getElementById('rfidDisplay');
+            const status = document.getElementById('status');
+            
+            // Simulate receiving data from Arduino
+            // In a real implementation, this would receive data from the Arduino
+            if (lastUID) {
+                display.textContent = `UID RFID: ${lastUID}\nWaktu Scan: ${new Date().toLocaleString('id-ID')}\nStatus: Berhasil dibaca`;
+                status.textContent = "✅ Data RFID berhasil ditampilkan";
+                status.className = "status success";
+            } else {
+                display.textContent = "Belum ada data RFID yang tersedia.\nSilakan scan kartu RFID terlebih dahulu.";
+                status.textContent = "⚠️ Belum ada data RFID";
+                status.className = "status error";
+            }
+        }
+        
+        // Function to receive data from Arduino (simulated)
+        function receiveRFIDData(uid) {
+            lastUID = uid;
+            console.log("Received RFID UID:", uid);
+        }
+        
+        // Simulate receiving data every 5 seconds (for demo purposes)
+        setInterval(() => {
+            // This would normally receive data from the Arduino via HTTP
+            // For demo, we'll simulate some RFID data
+            const demoUIDs = [
+                "04 A3 B2 C1 D5 E6 F7 88",
+                "04 12 34 56 78 9A BC DE",
+                "04 98 76 54 32 10 FE DC"
+            ];
+            
+            if (Math.random() > 0.7) { // 30% chance to receive new data
+                const randomUID = demoUIDs[Math.floor(Math.random() * demoUIDs.length)];
+                receiveRFIDData(randomUID);
+            }
+        }, 5000);
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('rfidDisplay').textContent = 
+                "Selamat datang di EcoJelantah RFID Data Viewer\n\n" +
+                "Klik tombol 'Lihat Data RFID' untuk melihat data terbaru.";
+        });
+    </script>
+</body>
+</html> 
